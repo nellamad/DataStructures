@@ -43,6 +43,7 @@ class RedBlackTreeTest {
             System.out.println("Adding " + data);
             tree.insert(new Node(data));
             tree.printTree();
+            tree.validate();
         }
 
     }

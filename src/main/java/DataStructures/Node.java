@@ -8,7 +8,18 @@ public class Node {
     Colour colour = Colour.BLACK;
 
     enum Colour {
-        BLACK, RED;
+        RED(0),
+        BLACK(1);
+
+        private int value;
+
+        Colour(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
     }
 
     Node(Integer data) {

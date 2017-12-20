@@ -8,42 +8,38 @@ public class RedBlackTree {
 
     /*************** GENERAL HELPERS **********************/
 
-    private void rotateLeft(Node n) {
-        Node parent = n.parent;
-
-        Node centre = n.right;
+    private void rotate(Node lead, boolean toLeft) {
+        Node parent = lead.parent;
+        Node centre = toLeft ? lead.right : lead.left;
         assert(centre != LEAF);
-        n.right = centre.left;
-        centre.left = n;
-        centre.parent = n.parent;
-        n.parent = centre;
+
+        if (toLeft) {
+            lead.right = centre.left;
+            if (centre.left != null) {
+                centre.left.parent = lead;
+            }
+        } else {
+            lead.left = centre.right;
+            if (centre.right != null) {
+                centre.right.parent = lead;
+            }
+        }
+        lead.parent = centre;
+
+        centre.left = toLeft ? lead : centre.left;
+        centre.right = toLeft ? centre.right : lead;
+        centre.parent = parent;
 
         if (parent != null) {
-            if (n == parent.left) {
+            assert lead == parent.left || lead == parent.right :
+                    String.format("rotate: Attempting rotate on %s but found inconsistent links with parent %s", lead, parent);
+            if (lead == parent.left) {
                 parent.left = centre;
-            } else if (n == parent.right) {
+            } else if (lead == parent.right) {
                 parent.right = centre;
             }
         }
-    }
 
-    private void rotateRight(Node n) {
-        Node parent = n.parent;
-
-        Node centre = n.left;
-        assert(centre != LEAF);
-        n.left = centre.right;
-        centre.right = n;
-        centre.parent = n.parent;
-        n.parent = centre;
-
-        if (parent != null) {
-            if (n == parent.left) {
-                parent.left = centre;
-            } else if (n == parent.right) {
-                parent.right = centre;
-            }
-        }
     }
 
     /************ INSERT METHODS *********************/
@@ -116,10 +112,10 @@ public class RedBlackTree {
 
         // step 1 - if n is on the inside of the tree, rotate it to the outside
         if (n == grandParent.left.right) {
-            rotateLeft(n.parent);
+            rotate(n.parent, true);
             n = n.left;
         } else if (n == grandParent.right.left) {
-            rotateRight(n.parent);
+            rotate(n.parent, false);
             n = n.right;
         }
 
@@ -130,16 +126,59 @@ public class RedBlackTree {
         // step 2 - rotate grandparent to maintain tree balance
         Node parent = n.parent;
         Node grandParent = n.getGrandParent();
-        if (n == parent.left) {
-            rotateRight(grandParent);
-        } else {
-            rotateLeft(grandParent);
-        }
+        if (n == parent.left) { rotate(grandParent, false); }
+        else { rotate(grandParent, true); }
+
         parent.colour = Node.Colour.BLACK;
         grandParent.colour = Node.Colour.RED;
     }
 
     /************ TESTING METHODS *******/
+
+    void validate() {
+        assert this.root != LEAF;
+        validateRec(this.root, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+
+    // validates the properties of a RedBlackTree and returns the black-height of this tree
+    int validateRec(Node root, int lowerBound, int higherBound) {
+        if (root == null) { return 0; }
+        if (root == LEAF) { return 1; }
+
+        if (root.parent != null) {
+            assert root.parent.left == root || root.parent.right == root :
+                    String.format("validateRec: %s shows parent as %s but %s shows left %s and right %s",
+                            root,
+                            root.parent,
+                            root.parent,
+                            root.parent.left,
+                            root.parent.right);
+        }
+
+        // Binary search tree property check
+        assert(root.data > lowerBound && root.data < higherBound);
+
+        // RedBlack properties checks
+        assert(root.colour != null);
+        if (root == this.root || root == LEAF) { assert(root.colour == Node.Colour.BLACK); }
+        if (root.colour == Node.Colour.RED) {
+            assert(root.left != null && root.left.colour == Node.Colour.BLACK);
+            assert(root.right != null && root.right.colour == Node.Colour.BLACK);
+        }
+        // Every path from a given node to any of its LEAF nodes must contain the same number of black nodes.
+        int leftBlackHeight = validateRec(root.left, lowerBound, root.data);
+        int rightBlackHeight = validateRec(root.right, root.data, higherBound);
+        assert leftBlackHeight == rightBlackHeight :
+            String.format("Non-matching black-heights: %s's left %s with black-height %s and right %s with black-height %s",
+                    root,
+                    root.left,
+                    leftBlackHeight,
+                    root.right,
+                    rightBlackHeight);
+        return leftBlackHeight + root.colour.getValue(); // BLACK nodes should have a value of 1
+    }
+
+
 
     void printTree() {
         System.out.println("Printing tree...");
