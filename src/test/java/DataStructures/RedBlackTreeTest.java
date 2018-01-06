@@ -37,7 +37,7 @@ class RedBlackTreeTest {
 
 
     @Test
-    void insert() {
+    void insertAndDelete() {
         System.out.println("Starting insert test");
         for (int data : nodeData) {
             System.out.println("Adding " + data);
@@ -46,5 +46,12 @@ class RedBlackTreeTest {
             tree.validate();
         }
 
+        System.out.println("Starting delete test");
+        for (int data : nodeData) {
+            System.out.println("Deleting " + data);
+            tree.delete(data);
+            tree.printTree();
+            tree.validate();
+        }
     }
 }
