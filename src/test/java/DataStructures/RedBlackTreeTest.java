@@ -41,7 +41,7 @@ class RedBlackTreeTest {
         System.out.println("Starting insert test");
         for (int data : nodeData) {
             System.out.println("Adding " + data);
-            tree.insert(new Node(data));
+            tree.insert(new RedBlackNode(data));
             tree.printTree();
             tree.validate();
         }

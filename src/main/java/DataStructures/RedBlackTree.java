@@ -2,18 +2,42 @@ package DataStructures;
 
 import java.util.*;
 
+
+/*
+    Implementation of a red-black tree, a kind of self-balancing binary
+    search tree where balance is achieved through maintaining certain
+    node colouring properties.  Search, insertion and deletion are all
+    performed in O(log n) time.
+
+
+    In addition to the requirements imposed on a binary search tree the following must be satisfied by a red–black tree:
+
+    1. Each node is either red or black.
+    2. The root is black. This rule is sometimes omitted. Since the root can always be changed from red to black, but
+    not necessarily vice versa, this rule has little effect on analysis.
+    3. All leaves (NIL) are black.
+    4. If a node is red, then both its children are black.
+    5. Every path from a given node to any of its descendant NIL nodes contains the same number of black nodes.
+    Some definitions: the number of black nodes from the root to a node is the node's black depth; the uniform number of
+     black nodes in all paths from root to the leaves is called the black-height of the red–black tree.[17]
+
+ */
 public class RedBlackTree {
-    public Node root;
-    final static Node LEAF = new Node(null);
+    private RedBlackNode root;
+
+    // This is a sentinel node which plays the role of every null-leaf in the tree.
+    private final static RedBlackNode LEAF = new RedBlackNode();
 
     /*************** GENERAL HELPERS **********************/
 
+    // Performs a tree rotation either leftward or rightward on the given node
     private void rotate(Node lead, boolean toLeft) {
         assert lead != LEAF : "Trying to rotate on a LEAF as lead.";
         Node parent = lead.parent;
         Node centre = toLeft ? lead.right : lead.left;
         assert(centre != LEAF);
 
+        // Re-route the links touching the lead node
         if (toLeft) {
             lead.right = centre.left;
             if (centre.left != null && centre.left != LEAF) {
@@ -27,56 +51,61 @@ public class RedBlackTree {
         }
         lead.parent = centre;
 
+        // Re-route the links touching the centre node
         centre.left = toLeft ? lead : centre.left;
         centre.right = toLeft ? centre.right : lead;
         centre.parent = parent;
 
-        if (parent != null) {
+        // Finally, re-assign the link from lead's original parent.
+        if (parent == null) {
+            this.root = (RedBlackNode) centre;
+        } else {
             assert lead == parent.left || lead == parent.right :
                     String.format("rotate: Attempting rotate on %s but found inconsistent links with parent %s", lead, parent);
             if (lead == parent.left) {
                 parent.left = centre;
-            } else if (lead == parent.right) {
+            } else {
                 parent.right = centre;
             }
-        } else {
-            this.root = centre;
         }
 
     }
 
     /************ INSERT METHODS *********************/
 
-    Node insert(Node n) {
+    // If the given node does not already exist in the tree, inserts it.
+    void insert(RedBlackNode n) {
+        // Performs a simple binary search tree insertion
         if (insertRec(root, n)) {
+            // Repair any red-black tree conditions that were broken by the insertion
             insertRepair(n);
 
+            // The root may have changed due to tree rotations, so we'll have to re-find it just in case
             root = n;
             while (root.parent != null) {
-                root = root.parent;
+                root = (RedBlackNode) root.parent;
             }
-            return root;
         }
-
-        return null;
     }
 
-    boolean insertRec(Node root, Node n) {
+    // Performs a simple binary search tree insertion without regard for red-black tree conditions
+    // Returns false if the given node is already included in the tree
+    private boolean insertRec(RedBlackNode root, RedBlackNode n) {
         if (root != null) {
-            if (n.data == root.data) {
+            if (n.data.equals(root.data)) {
                 return false;
             }
             else if (n.data > root.data) {
                 if (root.right == LEAF) {
                     root.right = n;
                 } else {
-                    return insertRec(root.right, n);
+                    return insertRec(root.right(), n);
                 }
             } else if (n.data < root.data) {
                 if (root.left == LEAF) {
                     root.left = n;
                 } else {
-                    return insertRec(root.left, n);
+                    return insertRec(root.left(), n);
                 }
             }
         }
@@ -84,75 +113,103 @@ public class RedBlackTree {
         n.parent = root;
         n.left = LEAF;
         n.right = LEAF;
-        n.colour = Node.Colour.RED;
+        n.colour = RedBlackNode.Colour.RED;
         return true;
     }
 
-    void insertRepair(Node n) {
+    /*
+        Repairs red-black tree conditions that have been broken by performing a simple BST
+        insertion with n.
+        In case 3, a tail-recursive call is performed which could run all the way up to the tree root in thw worst case.
+        This gives insert an O(log n) time complexity.
+     */
+    private void insertRepair(RedBlackNode n) {
+        RedBlackNode parent = (RedBlackNode) n.parent;
         if (n.parent == null) {
-            // case 1 - n is the root
-            // make the assignment explicit, for the initial case
+            // Case 1 - n is the new functional root
+            // Then assign the tree's root field.
             root = n;
-            n.colour = Node.Colour.BLACK;
-        } else if (n.parent.colour == Node.Colour.BLACK) {
-            // case 2 - n's parent is black
-        } else if (n.getUncle().colour == Node.Colour.RED) {
-            // case 3 - parent and uncle are red
-            Node grandParent = n.getGrandParent();
-            assert(grandParent != null && n.getUncle() != null);
-            n.parent.colour = Node.Colour.BLACK;
-            n.getUncle().colour = Node.Colour.BLACK;
-            grandParent.colour = Node.Colour.RED;
-            insertRepair(grandParent);
+            n.colour = RedBlackNode.Colour.BLACK;
+        } else if (parent.colour == RedBlackNode.Colour.BLACK) {
+            // Case 2 - n's parent is black
+            // Then we're done because no red-black tree conditions are broken
         } else {
-            // case 4 - parent is red and uncle is black
-            insertCase4(n);
+            RedBlackNode uncle = n.getUncle();
+            if (uncle != null && uncle.colour == RedBlackNode.Colour.RED) {
+
+                // Case 3 - parent and uncle are red
+                // Then recolour parent, uncle and grandparent
+                RedBlackNode grandParent = n.getGrandParent();
+                assert(grandParent != null && n.getUncle() != null);
+                parent.colour = RedBlackNode.Colour.BLACK;
+                uncle.colour = RedBlackNode.Colour.BLACK;
+                grandParent.colour = RedBlackNode.Colour.RED;
+
+                /*
+                Grandparent might now be violating property 2 so we have to recursively run the
+                repair algorithm on it.
+                */
+                insertRepair(grandParent);
+            } else {
+                // Case 4 - parent is red and uncle is black
+                insertCase4(n);
+            }
         }
     }
 
+    // Handles case 4 of the insert repair step.
+    // The parent P is red but the uncle U is black.
     private void insertCase4(Node n) {
+        Node parent = n.parent;
         Node grandParent = n.getGrandParent();
-
-        // step 1 - if n is on the inside of the tree, rotate it to the outside
+        // step 1 - if n is on the "inside" of the tree, rotate it to the outside
         if (n == grandParent.left.right) {
-            rotate(n.parent, true);
+            rotate(parent, true);
             n = n.left;
         } else if (n == grandParent.right.left) {
-            rotate(n.parent, false);
+            rotate(parent, false);
             n = n.right;
         }
 
-        insertCase4Step2(n);
+        insertCase4Step2((RedBlackNode) n);
     }
 
-    private void insertCase4Step2(Node n) {
-        // step 2 - rotate grandparent to maintain tree balance
-        Node parent = n.parent;
-        Node grandParent = n.getGrandParent();
-        if (n == parent.left) { rotate(grandParent, false); }
-        else { rotate(grandParent, true); }
+    // Now that n is on the "outside" of the tree, we can perform step 2.
+    private void insertCase4Step2(RedBlackNode n) {
+        RedBlackNode parent = (RedBlackNode) n.parent;
+        RedBlackNode grandParent = n.getGrandParent();
 
-        parent.colour = Node.Colour.BLACK;
-        grandParent.colour = Node.Colour.RED;
+        // Peform a rotation towards the opposite side that n is on
+        rotate(grandParent, n == parent.right);
+        // Then recolour to maintain red-black tree properties.
+        parent.colour = RedBlackNode.Colour.BLACK;
+        grandParent.colour = RedBlackNode.Colour.RED;
     }
 
     /************ DELETE METHODS *********/
 
+    // Deletes the given value from the tree, if it exists, and maintain all red-black tree properties
     void delete(int value) {
-        Node current = this.root;
+        RedBlackNode current = this.root;
+        // Perform a simple BST search
         while (current != null && current != LEAF && value != current.data) {
-            current = value > current.data ? current.right : current.left;
+            current = value > current.data ? current.right() : current.left();
         }
 
         if (current != null && current != LEAF) {
             if (current.left != LEAF && current.right != LEAF) {
-                Node swapNode = this.getInOrderPredecessor(current);
+                // Special case: the delete candidate is an internal node (it has two non-leaf children)
+                // Then swap it's inorder predecessor/successor's value into the candidate node
+                RedBlackNode swapNode = (RedBlackNode) this.getInOrderPredecessor(current);
                 if (swapNode == null) {
-                    swapNode = this.getinOrderSucessor(current);
+                    swapNode = (RedBlackNode) this.getinOrderSucessor(current);
                 }
                 current.data = swapNode.data;
+
+                // Now the problem is reduced to deleting a node that has at most one non-leaf child, the swapNode
                 deleteOneChild(swapNode);
             } else {
+                // Delete a node that has at most one non-leaf child
                 deleteOneChild(current);
             }
         }
@@ -161,8 +218,8 @@ public class RedBlackTree {
         }
     }
 
-    Node getInOrderPredecessor(Node n) {
-        // retrieve the maximal element in n's left subtree
+    // Retrieve the maximal element in n's left subtree
+    Node getInOrderPredecessor(RedBlackNode n) {
         Node current = n.left;
         while (current != null && current.right != LEAF) {
             current = current.right;
@@ -170,8 +227,8 @@ public class RedBlackTree {
         return current;
     }
 
-    Node getinOrderSucessor(Node n) {
-        // retrieve the minimal element in n's right subtree
+    // Retrieve the minimal element in n's right subtree
+    Node getinOrderSucessor(RedBlackNode n) {
         Node current = n.right;
         while (current != null && current.left != LEAF) {
             current = current.left;
@@ -179,13 +236,13 @@ public class RedBlackTree {
         return current;
     }
 
-    void deleteOneChild(Node toDelete) {
-        // precondition: toDelete has at most one non-leaf child
+    // Delete a node that has at most one non-leaf child
+    private void deleteOneChild(RedBlackNode toDelete) {
         assert toDelete != LEAF;
         if (toDelete.left != LEAF) assert toDelete.right == LEAF : "deleteOneChild: attempting to delete node with more than one non-leaf child " + toDelete;
         if (toDelete.right != LEAF) assert toDelete.left == LEAF : "deleteOneChild: attempting to delete node with more than one non-leaf child " + toDelete;
 
-        Node child = toDelete.right == LEAF ? toDelete.left : toDelete.right;
+        RedBlackNode child = toDelete.right == LEAF ? toDelete.left() : toDelete.right();
 
         // substitute child into toDelete's place in the tree
         Node parent = toDelete.parent;
@@ -195,154 +252,167 @@ public class RedBlackTree {
             assert toDelete == parent.left || toDelete == parent.right;
             if (toDelete == parent.left) {
                 parent.left = child;
-            } else if (toDelete == parent.right) {
+            } else {
                 parent.right = child;
             }
         }
         child.parent = parent;
 
-        if (toDelete.colour == Node.Colour.BLACK) {
-            if (child.colour == Node.Colour.RED) {
-                child.colour = Node.Colour.BLACK;
+        if (toDelete.colour == RedBlackNode.Colour.BLACK) {
+            if (child.colour == RedBlackNode.Colour.RED) {
+                child.colour = RedBlackNode.Colour.BLACK;
             } else {
+                // Some repairs are needed to maintain red-black tree properties
                 deleteCase1(child);
             }
         }
     }
 
-    void deleteCase1(Node n) {
-        // if n is the root, then we're done and don't need to do anything
-        // otherwise....
+    private void deleteCase1(RedBlackNode n) {
+        // If n is the root, then we're done and don't need to do anything
         if (n.parent != null) {
             deleteCase2(n);
         }
     }
 
-    void deleteCase2(Node n) {
-        // In this case, n's sibling is red
-        // Perform colour change and rotation necessary so that n has a black sibling
-        // and then go to the next step
-        Node sibling = n.getSibling();
-        if (sibling.colour == Node.Colour.RED) {
-            n.parent.colour = Node.Colour.RED;
-            sibling.colour = Node.Colour.BLACK;
+    private void deleteCase2(RedBlackNode n) {
+        /*
+            In this case, n's sibling is red
+            Perform colour change and rotation necessary so that n has a black sibling
+            and then go to the next step
+        */
+        RedBlackNode sibling = n.getSibling();
+        if (sibling.colour == RedBlackNode.Colour.RED) {
+            n.parent().colour = RedBlackNode.Colour.RED;
+            sibling.colour = RedBlackNode.Colour.BLACK;
             rotate(n.parent, n == n.parent.left);
         }
 
         deleteCase3(n);
     }
 
-    void deleteCase3(Node n) {
-        // if n, n's parent, and n's sibling's children are all black
-        // then colour n's sibling red and perform a rebalancing on n's parent
-        // starting at case 1
+    private void deleteCase3(RedBlackNode n) {
+        /*
+            If n, n's parent, and n's sibling's children are all black
+            then colour n's sibling red and perform a rebalancing on n's parent
+            starting at case 1.
+            This rebalancing is a tail-recursive call that could reach the tree root in the worst case, giving
+            this deletion an O(log n) time complexity.
+        */
 
-        Node sibling = n.getSibling();
+        RedBlackNode sibling = n.getSibling();
 
-        if ((n.parent.colour == Node.Colour.BLACK) &&
-                (sibling.colour == Node.Colour.BLACK) &&
-                (sibling.left.colour == Node.Colour.BLACK) &&
-                (sibling.right.colour == Node.Colour.BLACK)) {
-            sibling.colour = Node.Colour.RED;
-            deleteCase1(n.parent);
+        if ((n.parent().colour == RedBlackNode.Colour.BLACK) &&
+                (sibling.colour == RedBlackNode.Colour.BLACK) &&
+                (sibling.left().colour == RedBlackNode.Colour.BLACK) &&
+                (sibling.right().colour == RedBlackNode.Colour.BLACK)) {
+            sibling.colour = RedBlackNode.Colour.RED;
+            deleteCase1(n.parent());
         } else {
             deleteCase4(n);
         }
     }
 
-    void deleteCase4(Node n) {
+    private void deleteCase4(RedBlackNode n) {
         // n's sibling and sibling's children are black but n's parent is red
         // then swap the colours of the sibling and parent
 
-        Node sibling = n.getSibling();
+        RedBlackNode sibling = n.getSibling();
 
-        if ((n.parent.colour == Node.Colour.RED) &&
-                (sibling.colour == Node.Colour.BLACK) &&
-                (sibling.left.colour == Node.Colour.BLACK) &&
-                (sibling.right.colour == Node.Colour.BLACK)) {
-            sibling.colour = Node.Colour.RED;
-            n.parent.colour = Node.Colour.BLACK;
+        if ((n.parent().colour == RedBlackNode.Colour.RED) &&
+                (sibling.colour == RedBlackNode.Colour.BLACK) &&
+                (sibling.left().colour == RedBlackNode.Colour.BLACK) &&
+                (sibling.right().colour == RedBlackNode.Colour.BLACK)) {
+            sibling.colour = RedBlackNode.Colour.RED;
+            n.parent().colour = RedBlackNode.Colour.BLACK;
         } else {
             deleteCase5(n);
         }
     }
 
-    void deleteCase5(Node n) {
-        // Sibling is black, sibling's children are red and black
-        // Rotate so that n has a black sibling whose child towards the outside of the subtree at n's parent is red
-        // Then we can fall into case 6
+    private void deleteCase5(RedBlackNode n) {
+        /*
+            Sibling is black, sibling's children are red and black
+            Rotate so that n has a black sibling whose child towards the outside of the subtree at n's parent is red
+            Then we can fall into case 6
+          */
+        RedBlackNode sibling = n.getSibling();
 
-        Node sibling = n.getSibling();
-
-        if (sibling.colour == Node.Colour.BLACK) {
+        if (sibling.colour == RedBlackNode.Colour.BLACK) {
             if ((n == n.parent.left) &&
-                    (sibling.right.colour == Node.Colour.BLACK) &&
-                    sibling.left.colour == Node.Colour.RED) {
-                sibling.colour = Node.Colour.RED;
-                sibling.left.colour = Node.Colour.BLACK;
+                    (sibling.right().colour == RedBlackNode.Colour.BLACK) &&
+                    sibling.left().colour == RedBlackNode.Colour.RED) {
+                sibling.colour = RedBlackNode.Colour.RED;
+                sibling.left().colour = RedBlackNode.Colour.BLACK;
                 rotate(sibling, false);
             } else if ((n == n.parent.right) &&
-                    (sibling.left.colour == Node.Colour.BLACK) &&
-                    (sibling.right.colour == Node.Colour.RED)) {
-                sibling.colour = Node.Colour.RED;
-                sibling.right.colour = Node.Colour.BLACK;
+                    (sibling.left().colour == RedBlackNode.Colour.BLACK) &&
+                    (sibling.right().colour == RedBlackNode.Colour.RED)) {
+                sibling.colour = RedBlackNode.Colour.RED;
+                sibling.right().colour = RedBlackNode.Colour.BLACK;
                 rotate(sibling, true);
             }
         }
         deleteCase6(n);
     }
 
-    void deleteCase6(Node n) {
-        // sibling is black, sibling's child is red
-        Node sibling = n.getSibling();
+    private void deleteCase6(RedBlackNode n) {
+        /*
+            Sibling is black, sibling's child towards the "outside" of the tree is red.
+            Then perform an inward rotation and recolour to restore red-black properties.
+         */
+        RedBlackNode sibling = n.getSibling();
 
-        sibling.colour = n.parent.colour;
-        n.parent.colour = Node.Colour.BLACK;
+        sibling.colour = n.parent().colour;
+        n.parent().colour = RedBlackNode.Colour.BLACK;
 
-        if (n == n.parent.left) {
-            sibling.right.colour = Node.Colour.BLACK;
+        if (n == n.parent().left) {
+            sibling.right().colour = RedBlackNode.Colour.BLACK;
             rotate(n.parent, true);
         } else {
-            sibling.left.colour = Node.Colour.BLACK;
+            sibling.left().colour = RedBlackNode.Colour.BLACK;
             rotate(n.parent, false);
         }
     }
 
     /************ TESTING METHODS *******/
 
-    void validate() {
+    // Validates the properties of a red-black tree
+    public void validate() {
         assert this.root != LEAF;
         validateRec(this.root, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
-    // validates the properties of a RedBlackTree and returns the black-height of this tree
-    int validateRec(Node root, int lowerBound, int higherBound) {
+    // Validates the properties of a red-black tree and returns the black-height of this tree
+    private int validateRec(RedBlackNode root, int lowerBound, int higherBound) {
         if (root == null) { return 0; }
         if (root == LEAF) { return 1; }
 
-        if (root.parent != null) {
-            assert root.parent.left == root || root.parent.right == root :
-                    String.format("validateRec: %s shows parent as %s but %s shows left %s and right %s",
-                            root,
-                            root.parent,
-                            root.parent,
-                            root.parent.left,
-                            root.parent.right);
-        }
+        assert root.parent == null || root.parent.left == root || root.parent.right == root :
+                String.format("validateRec: %s shows parent as %s but %s shows left %s and right %s",
+                        root,
+                        root.parent,
+                        root.parent,
+                        root.parent.left,
+                        root.parent.right);
 
         // Binary search tree property check
         assert(root.data > lowerBound && root.data < higherBound);
 
-        // RedBlack properties checks
-        assert(root.colour != null);
-        if (root == this.root || root == LEAF) { assert(root.colour == Node.Colour.BLACK); }
-        if (root.colour == Node.Colour.RED) {
-            assert(root.left != null && root.left.colour == Node.Colour.BLACK);
-            assert(root.right != null && root.right.colour == Node.Colour.BLACK);
+        // Red-black properties checks
+        // Property 1
+        assert root.colour == RedBlackNode.Colour.BLACK || root.colour == RedBlackNode.Colour.RED;
+        // Properties 2 and 3
+        assert root != this.root && root != LEAF || (root.colour == RedBlackNode.Colour.BLACK);
+        // Property 4
+        if (root.colour == RedBlackNode.Colour.RED) {
+            assert(root.left != null && root.left().colour == RedBlackNode.Colour.BLACK);
+            assert(root.right != null && root.right().colour == RedBlackNode.Colour.BLACK);
         }
+        // Property 5
         // Every path from a given node to any of its LEAF nodes must contain the same number of black nodes.
-        int leftBlackHeight = validateRec(root.left, lowerBound, root.data);
-        int rightBlackHeight = validateRec(root.right, root.data, higherBound);
+        int leftBlackHeight = validateRec(root.left(), lowerBound, root.data);
+        int rightBlackHeight = validateRec(root.right(), root.data, higherBound);
         assert leftBlackHeight == rightBlackHeight :
             String.format("Non-matching black-heights: %s's left %s with black-height %s and right %s with black-height %s",
                     root,
@@ -353,24 +423,23 @@ public class RedBlackTree {
         return leftBlackHeight + root.colour.getValue(); // BLACK nodes should have a value of 1
     }
 
-
-
-    void printTree() {
+    // Prints a representation of the tree, each line representing one level of the tree starting at the root.
+    public void printTree() {
         if (this.root == null) {
             System.out.println("Tree is empty.  Nothing to print.");
             return;
         }
-        // breadth-first search and print
-        List<List<Node>> levels = new ArrayList<>(1);
-        Queue<Node> toVisit = new LinkedList<>();
+        // Breadth-first search to gather nodes at each level
+        List<List<RedBlackNode>> levels = new ArrayList<>(1);
+        Queue<RedBlackNode> toVisit = new LinkedList<>();
         toVisit.add(root);
 
         int size = 0;
         int level = 0;
         while (!toVisit.isEmpty()) {
-            List<Node> children = new ArrayList<>();
+            List<RedBlackNode> children = new ArrayList<>();
             while (!toVisit.isEmpty()) {
-                Node current = toVisit.remove();
+                RedBlackNode current = toVisit.remove();
                 size += current == LEAF ? 0 : 1;
                 // add this node to the current level
                 if (levels.size() <= level) {
@@ -380,10 +449,10 @@ public class RedBlackTree {
 
                 // add this node's children to the list to be traversed for the next level
                 if (current.left != null) {
-                    children.add(current.left);
+                    children.add(current.left());
                 }
                 if (current.right != null) {
-                    children.add(current.right);
+                    children.add(current.right());
                 }
 
             }
@@ -393,7 +462,6 @@ public class RedBlackTree {
 
         System.out.println("Printing tree with " + size + " nodes");
         for (int i = 0; i < levels.size(); i++) {
-            // System.out.print(String.join("", Collections.nCopies(75 - i*8, " ")));
             System.out.println(levels.get(i).toString());
 
         }

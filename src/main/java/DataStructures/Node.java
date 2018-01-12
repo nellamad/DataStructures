@@ -1,36 +1,24 @@
 package DataStructures;
 
-public class Node {
-    Node parent;
-    Integer data;
-    Node left;
-    Node right;
-    Colour colour = Colour.BLACK;
+public abstract class Node {
+    protected Node parent;
+    protected Integer data;
+    protected Node left;
+    protected Node right;
 
-    enum Colour {
-        RED(0),
-        BLACK(1);
+    Node() {
 
-        private int value;
-
-        Colour(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
     }
 
     Node(Integer data) {
         this.data = data;
     }
 
-    Node getGrandParent() {
-        return this.parent == null ? null : this.parent.parent;
+    protected Node getGrandParent() {
+        return parent == null ? null : parent.parent;
     }
 
-    public Node getSibling() {
+    protected Node getSibling() {
         if (parent == null) {
             return null;
         }
@@ -38,16 +26,11 @@ public class Node {
         return this == parent.left ? parent.right : parent.left;
     }
 
-    public Node getUncle() {
+    protected Node getUncle() {
         Node grandParent = getGrandParent();
         if (grandParent == null) {
             return null;
         }
         return this.parent == grandParent.left ? grandParent.right : grandParent.left;
-    }
-
-    @Override
-    public String toString() {
-        return data != null ? String.format("%s(%s)", data.toString(), colour): "LEAF";
     }
 }
