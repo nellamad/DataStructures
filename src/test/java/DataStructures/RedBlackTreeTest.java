@@ -8,11 +8,8 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class RedBlackTreeTest {
-    private RedBlackTree tree;
-    static String[] input_file_names = Stream.of("src/test/resources/zero_int.txt",
+    private static String[] input_file_names = Stream.of("src/test/resources/zero_int.txt",
             "src/test/resources/five_int.txt",
             "src/test/resources/hundred_int.txt").toArray(String[]::new);
 
@@ -31,7 +28,7 @@ class RedBlackTreeTest {
         ArrayList<Integer> nodeData = new ArrayList<>();
         for (String file_name : input_file_names) {
             System.out.println("Starting test with input from: " + file_name);
-            tree = new RedBlackTree();
+            RedBlackTree tree = new RedBlackTree();
             try {
                 // need to specify utf-16 encoding since our test input is generated from python
                 BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file_name), "UTF-16"));
@@ -39,8 +36,6 @@ class RedBlackTreeTest {
                     String line = in.readLine().trim();
                     nodeData.add(Integer.parseInt(line));
                 }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
