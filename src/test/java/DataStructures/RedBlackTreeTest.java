@@ -6,11 +6,13 @@ import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 class RedBlackTreeTest {
+    private static final Logger logger = Logger.getLogger(RedBlackTreeTest.class.toString());
     private static String[] input_file_names = Stream.of("src/test/resources/zero_int.txt",
-            "src/test/resources/five_int.txt",
+            "src/test/resources/ten_int.txt",
             "src/test/resources/hundred_int.txt").toArray(String[]::new);
 
     @BeforeAll
@@ -27,7 +29,7 @@ class RedBlackTreeTest {
     void comprehensiveTest() {
         ArrayList<Integer> nodeData = new ArrayList<>();
         for (String file_name : input_file_names) {
-            System.err.println("Starting test with input from: " + file_name);
+            logger.info("Starting test with input from: " + file_name);
             RedBlackTree tree = new RedBlackTree();
             try {
                 // need to specify utf-16 encoding since our test input is generated from python
@@ -40,22 +42,22 @@ class RedBlackTreeTest {
                 e.printStackTrace();
             }
 
-            System.err.println("Starting insert test");
+            logger.fine("Starting insert test");
             for (int data : nodeData) {
-                System.err.println("Adding " + data);
+                logger.fine("Adding " + data);
                 tree.insert(new RedBlackNode(data));
                 tree.printTree();
                 tree.validate();
             }
 
-            System.err.println("Starting search test");
+            logger.fine("Starting search test");
             for (int data: nodeData) {
                 assert tree.search(data) : String.format("Value %s should be in tree, but was not found", data);
             }
 
-            System.err.println("Starting delete test");
+            logger.fine("Starting delete test");
             for (int data : nodeData) {
-                System.err.println("Deleting " + data);
+                logger.fine("Deleting " + data);
                 tree.delete(data);
                 tree.printTree();
                 tree.validate();

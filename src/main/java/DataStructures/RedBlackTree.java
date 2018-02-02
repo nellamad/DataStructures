@@ -1,6 +1,7 @@
 package DataStructures;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 
 /**
@@ -27,6 +28,8 @@ public class RedBlackTree {
 
     // This is a sentinel node which plays the role of every null-leaf in the tree.
     private final static RedBlackNode LEAF = new RedBlackNode();
+
+    private static final Logger logger = Logger.getLogger(RedBlackTree.class.toString());
 
     /*************** GENERAL HELPERS **********************/
 
@@ -268,7 +271,7 @@ public class RedBlackTree {
             }
         }
         else {
-            System.err.println("Node with data  " + value + " not found. Nothing to delete.");
+            logger.fine(String.format("Node with data %d not found.  Nothing to delete", value));
         }
     }
 
@@ -536,7 +539,7 @@ public class RedBlackTree {
     // Prints a representation of the tree, each line representing one level of the tree starting at the root.
     public void printTree() {
         if (root == null) {
-            System.err.println("Tree is empty.  Nothing to print.");
+            logger.fine("Tree is empty.  Nothing to print.");
             return;
         }
         // Breadth-first search to gather nodes at each level
@@ -570,9 +573,9 @@ public class RedBlackTree {
             level++;
         }
 
-        System.err.println("Printing tree with " + size + " nodes");
+        logger.fine(String.format("Printing tree with %d nodes", size));
         for (int i = 0; i < levels.size(); i++) {
-            System.err.println(levels.get(i).toString());
+            logger.fine(levels.get(i).toString());
 
         }
     }
