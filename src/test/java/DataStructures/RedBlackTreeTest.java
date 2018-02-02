@@ -24,10 +24,10 @@ class RedBlackTreeTest {
     }
 
     @Test
-    void insertAndDelete() {
+    void comprehensiveTest() {
         ArrayList<Integer> nodeData = new ArrayList<>();
         for (String file_name : input_file_names) {
-            System.out.println("Starting test with input from: " + file_name);
+            System.err.println("Starting test with input from: " + file_name);
             RedBlackTree tree = new RedBlackTree();
             try {
                 // need to specify utf-16 encoding since our test input is generated from python
@@ -40,17 +40,22 @@ class RedBlackTreeTest {
                 e.printStackTrace();
             }
 
-            System.out.println("Starting insert test");
+            System.err.println("Starting insert test");
             for (int data : nodeData) {
-                System.out.println("Adding " + data);
+                System.err.println("Adding " + data);
                 tree.insert(new RedBlackNode(data));
                 tree.printTree();
                 tree.validate();
             }
 
-            System.out.println("Starting delete test");
+            System.err.println("Starting search test");
+            for (int data: nodeData) {
+                assert tree.search(data) : String.format("Value %s should be in tree, but was not found", data);
+            }
+
+            System.err.println("Starting delete test");
             for (int data : nodeData) {
-                System.out.println("Deleting " + data);
+                System.err.println("Deleting " + data);
                 tree.delete(data);
                 tree.printTree();
                 tree.validate();
