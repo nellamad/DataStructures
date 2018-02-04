@@ -1,24 +1,24 @@
 package DataStructures;
 
-public abstract class Node {
-    protected Node parent;
+public abstract class BinaryNode {
+    protected BinaryNode parent;
     protected Integer data;
-    protected Node left;
-    protected Node right;
+    protected BinaryNode left;
+    protected BinaryNode right;
 
-    Node() {
+    BinaryNode() {
 
     }
 
-    Node(Integer data) {
+    BinaryNode(Integer data) {
         this.data = data;
     }
 
-    protected Node getGrandParent() {
+    protected BinaryNode getGrandParent() {
         return parent == null ? null : parent.parent;
     }
 
-    protected Node getSibling() {
+    protected BinaryNode getSibling() {
         if (parent == null) {
             return null;
         }
@@ -26,8 +26,8 @@ public abstract class Node {
         return this == parent.left ? parent.right : parent.left;
     }
 
-    protected Node getUncle() {
-        Node grandParent = getGrandParent();
+    protected BinaryNode getUncle() {
+        BinaryNode grandParent = getGrandParent();
         if (grandParent == null) {
             return null;
         }

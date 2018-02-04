@@ -24,12 +24,12 @@ import java.util.logging.Logger;
  *
  */
 public class RedBlackTree {
-    private RedBlackNode root;
+    private static final Logger logger = Logger.getLogger(RedBlackTree.class.getName());
 
+    private RedBlackNode root;
     // This is a sentinel node which plays the role of every null-leaf in the tree.
     private final static RedBlackNode LEAF = new RedBlackNode();
 
-    private static final Logger logger = Logger.getLogger(RedBlackTree.class.toString());
 
     /*************** GENERAL HELPERS **********************/
 
@@ -39,10 +39,10 @@ public class RedBlackTree {
      * @param lead Node being rotated on
      * @param toLeft Whether the desired rotation is leftward, false implies rightward
      */
-    private void rotate(Node lead, boolean toLeft) {
+    private void rotate(BinaryNode lead, boolean toLeft) {
         assert lead != LEAF : "Trying to rotate on a LEAF as lead.";
-        Node parent = lead.parent;
-        Node centre = toLeft ? lead.right : lead.left;
+        BinaryNode parent = lead.parent;
+        BinaryNode centre = toLeft ? lead.right : lead.left;
         assert(centre != LEAF);
 
         // Re-route the links touching the lead node
@@ -111,11 +111,12 @@ public class RedBlackTree {
     /************ INSERT METHODS *********************/
 
     /**
-     * If the given node does not already exist in the tree, inserts it.
+     * If the given value does not already exist in the tree, inserts it.
      *
-     * @param n Node to be inserted
+     * @param value Value to be inserted
      */
-    void insert(RedBlackNode n) {
+    void insert(int value) {
+        RedBlackNode n = new RedBlackNode(value);
         // Performs a simple binary search tree insertion
         if (insertRec(root, n)) {
             // Repair any red-black tree conditions that were broken by the insertion
@@ -208,9 +209,9 @@ public class RedBlackTree {
      *
      * @param n Node that was inserted
      */
-    private void insertCase4(Node n) {
-        Node parent = n.parent;
-        Node grandParent = n.getGrandParent();
+    private void insertCase4(BinaryNode n) {
+        BinaryNode parent = n.parent;
+        BinaryNode grandParent = n.getGrandParent();
         // step 1 - if n is on the "inside" of the tree, rotate it to the outside
         if (n == grandParent.left.right) {
             rotate(parent, true);
@@ -271,7 +272,7 @@ public class RedBlackTree {
             }
         }
         else {
-            logger.fine(String.format("Node with data %d not found.  Nothing to delete", value));
+            logger.fine(String.format("BinaryNode with data %d not found.  Nothing to delete", value));
         }
     }
 
@@ -281,8 +282,8 @@ public class RedBlackTree {
      * @param n Node to find the in-order predecessor for
      * @return Node's in-order predecessor
      */
-    private Node getInOrderPredecessor(RedBlackNode n) {
-        Node current = n.left;
+    private BinaryNode getInOrderPredecessor(RedBlackNode n) {
+        BinaryNode current = n.left;
         while (current != null && current.right != LEAF) {
             current = current.right;
         }
@@ -295,8 +296,8 @@ public class RedBlackTree {
      * @param n Node to find the in-order sucessor for
      * @return Node's in-order successor
      */
-    private Node getinOrderSucessor(RedBlackNode n) {
-        Node current = n.right;
+    private BinaryNode getinOrderSucessor(RedBlackNode n) {
+        BinaryNode current = n.right;
         while (current != null && current.left != LEAF) {
             current = current.left;
         }
@@ -316,7 +317,7 @@ public class RedBlackTree {
         RedBlackNode child = toDelete.right == LEAF ? toDelete.left() : toDelete.right();
 
         // substitute child into toDelete's place in the tree
-        Node parent = toDelete.parent;
+        BinaryNode parent = toDelete.parent;
         if (parent == null) {
             root = child != LEAF ? child : null;
         } else {

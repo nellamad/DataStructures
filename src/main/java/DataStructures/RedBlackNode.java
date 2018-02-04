@@ -1,6 +1,6 @@
 package DataStructures;
 
-public class RedBlackNode extends Node {
+public class RedBlackNode extends BinaryNode {
     Colour colour;
 
     RedBlackNode() {
