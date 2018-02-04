@@ -30,8 +30,12 @@ class HeapTest {
         logger.info("Starting Heap tests...");
     }
 
+    /**
+     * Tests the heap push() and pop() methods.
+     *
+     */
     @Test
-    void insert() {
+    void pushAndPopTest() {
         ArrayList<Integer> nodeData = new ArrayList<>();
         for (String file_name : input_file_names) {
             logger.fine("Starting test with input from: " + file_name);
@@ -77,7 +81,7 @@ class HeapTest {
 
                 previous = current;
             }
-
+            assert heap.pop() == null;
         }
         logger.info("Passed");
     }

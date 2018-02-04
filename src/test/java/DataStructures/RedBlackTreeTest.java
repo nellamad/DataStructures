@@ -25,6 +25,9 @@ class RedBlackTreeTest {
 
     }
 
+    /**
+     * Tests the RedBlackTree insert, search and delete methods
+     */
     @Test
     void comprehensiveTest() {
         ArrayList<Integer> nodeData = new ArrayList<>();
